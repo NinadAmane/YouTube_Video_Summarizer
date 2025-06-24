@@ -47,22 +47,25 @@ def download_audio(video_url, output_dir="downloads"):
         result = subprocess.run(
             [
                 "yt-dlp",
-                "-x", "--audio-format", "mp3",
-                "--ffmpeg-location", "ffmpeg",  # Assume ffmpeg is in system path (via packages.txt)
-                "-o", output_path,
+                "--extract-audio",
+                "--audio-format", "mp3",
+                "--ffmpeg-location", "ffmpeg",
+                "--output", output_path,
                 video_url
             ],
-            check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            check=True
         )
         print("yt-dlp output:\n", result.stdout)
         return output_path
     except subprocess.CalledProcessError as e:
         print("yt-dlp error:\n", e.stderr)
+        st.error("🔴 yt-dlp failed. Please try another video or check logs.")
         return None
-
+    
+    
 # Transcribe using Whisper
 def transcribe_audio(audio_path):
     model = whisper.load_model("base")
