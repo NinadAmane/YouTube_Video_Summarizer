@@ -37,18 +37,54 @@ def get_video_id(youtube_url):
             return query.path.split('/')[2]
     return None
 
+
+
+
+
+
+
+
+
 # Download audio using yt-dlp
+# def download_audio(video_url, output_dir="downloads"):
+#     os.makedirs(output_dir, exist_ok=True)
+#     unique_id = str(uuid.uuid4())
+#     output_path = os.path.join(output_dir, f"{unique_id}.mp3")
+
+#     yt_dlp_path = "yt-dlp"
+#     ffmpeg_path = "ffmpeg"
+
+#     # Extend PATH to include ffmpeg (for Streamlit Cloud)
+#     env = os.environ.copy()
+#     env["PATH"] += os.pathsep + "/usr/bin"  # Common location for ffmpeg on Streamlit Cloud
+
+#     try:
+#         result = subprocess.run(
+#             [
+#                 yt_dlp_path,
+#                 "-x", "--audio-format", "mp3",
+#                 "--ffmpeg-location", ffmpeg_path,
+#                 "-o", output_path,
+#                 video_url
+#             ],
+#             check=True,
+#             stdout=subprocess.PIPE,
+#             stderr=subprocess.PIPE,
+#             text=True,
+#             env=env
+#         )
+#         print("yt-dlp output:\n", result.stdout)
+#         return output_path
+#     except subprocess.CalledProcessError as e:
+#         print("yt-dlp error:\n", e.stderr)
+#         return None
 def download_audio(video_url, output_dir="downloads"):
     os.makedirs(output_dir, exist_ok=True)
     unique_id = str(uuid.uuid4())
     output_path = os.path.join(output_dir, f"{unique_id}.mp3")
 
     yt_dlp_path = "yt-dlp"
-    ffmpeg_path = "ffmpeg"
-
-    # Extend PATH to include ffmpeg (for Streamlit Cloud)
-    env = os.environ.copy()
-    env["PATH"] += os.pathsep + "/usr/bin"  # Common location for ffmpeg on Streamlit Cloud
+    ffmpeg_path = os.getenv("FFMPEG_PATH", "ffmpeg")
 
     try:
         result = subprocess.run(
@@ -62,14 +98,25 @@ def download_audio(video_url, output_dir="downloads"):
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            env=env
+            text=True
         )
-        print("yt-dlp output:\n", result.stdout)
+        print("✅ yt-dlp STDOUT:\n", result.stdout)
+        print("✅ yt-dlp STDERR:\n", result.stderr)
         return output_path
     except subprocess.CalledProcessError as e:
-        print("yt-dlp error:\n", e.stderr)
+        print("❌ yt-dlp ERROR:\n", e.stderr)
         return None
+
+
+
+
+
+
+
+
+
+
+
 
 # Transcribe audio with Whisper
 def transcribe_audio(audio_path):
