@@ -116,8 +116,8 @@ def download_audio(video_url, output_dir="downloads"):
     unique_id = str(uuid.uuid4())
     output_path = os.path.join(output_dir, f"{unique_id}.mp3")
 
-    yt_dlp_path = r"C:\Python313\Scripts\yt-dlp.exe"  # Your yt-dlp path
-    ffmpeg_path = r"D:\YT_VIDEO_SUMMARIZER\ffmpeg\ffmpeg-7.1.1-essentials_build\bin"  # Your ffmpeg folder path
+    yt_dlp_path = "yt-dlp" # Your yt-dlp path
+    ffmpeg_path = os.getenv("FFMPEG_PATH", "ffmpeg")  # Your ffmpeg folder path
 
     try:
         result = subprocess.run(
