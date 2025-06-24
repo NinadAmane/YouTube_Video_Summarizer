@@ -16,8 +16,8 @@ A Streamlit web app that summarizes YouTube videos by extracting transcripts and
 
 - **Frontend:** Streamlit
 - **Backend:** Python
-- **Transcription:** YouTube Transcript API / Whisper (if used)
-- **Summarization:** Google Gemini Pro / Hugging Face (optional)
+- **Transcription:** yt-dlp / Whisper
+- **Summarization:** Google Gemini Pro
 - **Environment Variables:** `dotenv`
 
 ---
@@ -42,7 +42,7 @@ A Streamlit web app that summarizes YouTube videos by extracting transcripts and
 4. **Setup Environment Variable:**
    Create a .env file and add your Gemini API key:
    GOOGLE_API_KEY=your_gemini_api_key
-
+   FFmpeg (must be installed and added to PATH): https://ffmpeg.org/download.html
 5. **RUN THE APP**
 
    streamlit run app.py
