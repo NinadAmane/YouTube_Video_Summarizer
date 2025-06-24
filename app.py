@@ -11,7 +11,7 @@ import google.generativeai as genai
 load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-# Prompt for Gemini
+# Gemini Prompt
 prompt = """You are an expert video summarizer. Your task is to analyze the full transcript of a YouTube video and generate a clear, concise summary of the key points discussed.
 
 Please follow these instructions:
@@ -25,7 +25,7 @@ Please follow these instructions:
 Transcript starts here:
 """
 
-# Extract video ID
+# Extract video ID from URL
 def get_video_id(youtube_url):
     query = urlparse(youtube_url)
     if query.hostname == 'youtu.be':
@@ -43,30 +43,35 @@ def download_audio(video_url, output_dir="downloads"):
     unique_id = str(uuid.uuid4())
     output_path = os.path.join(output_dir, f"{unique_id}.mp3")
 
+    yt_dlp_path = "yt-dlp"
+    ffmpeg_path = "ffmpeg"
+
+    # Extend PATH to include ffmpeg (for Streamlit Cloud)
+    env = os.environ.copy()
+    env["PATH"] += os.pathsep + "/usr/bin"  # Common location for ffmpeg on Streamlit Cloud
+
     try:
         result = subprocess.run(
             [
-                "yt-dlp",
-                "--extract-audio",
-                "--audio-format", "mp3",
-                "--ffmpeg-location", "ffmpeg",
-                "--output", output_path,
+                yt_dlp_path,
+                "-x", "--audio-format", "mp3",
+                "--ffmpeg-location", ffmpeg_path,
+                "-o", output_path,
                 video_url
             ],
+            check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            check=True
+            env=env
         )
         print("yt-dlp output:\n", result.stdout)
         return output_path
     except subprocess.CalledProcessError as e:
         print("yt-dlp error:\n", e.stderr)
-        st.error("🔴 yt-dlp failed. Please try another video or check logs.")
         return None
-    
-    
-# Transcribe using Whisper
+
+# Transcribe audio with Whisper
 def transcribe_audio(audio_path):
     model = whisper.load_model("base")
     result = model.transcribe(audio_path)
@@ -78,21 +83,17 @@ def generate_gemini_content(transcript_text, prompt):
     response = model.generate_content(prompt + transcript_text)
     return response.text
 
-# Streamlit UI
+# Streamlit App UI
 st.set_page_config(page_title="YouTube Video Summarizer", layout="centered")
-st.title("🎬 YouTube Video Summarizer")
-st.markdown("Paste a YouTube link and get a clean summary using Whisper + Gemini.")
-
-# Optional: Check if ffmpeg exists (debugging help)
-ffmpeg_check = subprocess.getoutput("ffmpeg -version")
-st.caption(f"🔧 FFmpeg check: {ffmpeg_check.splitlines()[0] if ffmpeg_check else 'Not found'}")
+st.markdown("## 🎥 YouTube Video Summarizer")
+st.markdown("Paste a YouTube link below and get a clean summary powered by Whisper + Gemini.")
 
 youtube_link = st.text_input("📎 Enter YouTube video URL")
 
 if youtube_link:
     video_id = get_video_id(youtube_link)
     if video_id:
-        st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", caption="Video Thumbnail", use_container_width=True)
+        st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", caption="Video Thumbnail", use_column_width=True)
 
         if st.button("Summarize"):
             with st.spinner("🔊 Downloading audio..."):
@@ -107,12 +108,11 @@ if youtube_link:
                     st.markdown("## 📝 Detailed Summary:")
                     st.write(summary)
 
-                os.remove(audio_file)
+                os.remove(audio_file)  # Clean up
             else:
                 st.error("❌ Failed to download audio. Please check the video link or try another one.")
     else:
         st.warning("⚠️ Invalid YouTube link.")
-
 
 # import streamlit as st
 # import os
