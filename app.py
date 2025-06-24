@@ -78,33 +78,79 @@ def get_video_id(youtube_url):
 #     except subprocess.CalledProcessError as e:
 #         print("yt-dlp error:\n", e.stderr)
 #         return None
-def download_audio(video_url, output_dir="downloads"):
-    os.makedirs(output_dir, exist_ok=True)
-    unique_id = str(uuid.uuid4())
-    output_path = os.path.join(output_dir, f"{unique_id}.mp3")
 
-    yt_dlp_path = "yt-dlp"
-    ffmpeg_path = os.getenv("FFMPEG_PATH", "ffmpeg")
+
+# def download_audio(video_url, output_dir="downloads"):
+#     os.makedirs(output_dir, exist_ok=True)
+#     unique_id = str(uuid.uuid4())
+#     output_path = os.path.join(output_dir, f"{unique_id}.mp3")
+
+#     yt_dlp_path = "yt-dlp"
+#     ffmpeg_path = os.getenv("FFMPEG_PATH", "ffmpeg")
+
+#     try:
+#         result = subprocess.run(
+#             [
+#                 yt_dlp_path,
+#                 "-x", "--audio-format", "mp3",
+#                 "--ffmpeg-location", ffmpeg_path,
+#                 "-o", output_path,
+#                 video_url
+#             ],
+#             check=True,
+#             stdout=subprocess.PIPE,
+#             stderr=subprocess.PIPE,
+#             text=True
+#         )
+#         print("✅ yt-dlp STDOUT:\n", result.stdout)
+#         print("✅ yt-dlp STDERR:\n", result.stderr)
+#         return output_path
+#     except subprocess.CalledProcessError as e:
+#         print("❌ yt-dlp ERROR:\n", e.stderr)
+#         return None
+
+
+def download_audio(video_url):
+    import platform
+
+    unique_id = str(uuid.uuid4())
+    output_filename = f"{unique_id}.mp3"
+
+    # Default command (for cloud, where yt-dlp and ffmpeg are pre-installed)
+    yt_dlp_cmd = [
+        "yt-dlp",
+        "-x", "--audio-format", "mp3",
+        "--ffmpeg-location", "ffmpeg",
+        "-o", output_filename,
+        video_url
+    ]
+
+    # Detect local environment and override paths
+    if platform.system() == "Windows":
+        # Assume local Windows setup
+        yt_dlp_path = r"C:\Python313\Scripts\yt-dlp.exe"
+        ffmpeg_path = r"D:\YT_VIDEO_SUMMARIZER\ffmpeg\ffmpeg-7.1.1-essentials_build\bin"
+
+        yt_dlp_cmd = [
+            yt_dlp_path,
+            "-x", "--audio-format", "mp3",
+            "--ffmpeg-location", ffmpeg_path,
+            "-o", output_filename,
+            video_url
+        ]
 
     try:
         result = subprocess.run(
-            [
-                yt_dlp_path,
-                "-x", "--audio-format", "mp3",
-                "--ffmpeg-location", ffmpeg_path,
-                "-o", output_path,
-                video_url
-            ],
+            yt_dlp_cmd,
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
-        print("✅ yt-dlp STDOUT:\n", result.stdout)
-        print("✅ yt-dlp STDERR:\n", result.stderr)
-        return output_path
+        print("yt-dlp output:\n", result.stdout)
+        return output_filename
     except subprocess.CalledProcessError as e:
-        print("❌ yt-dlp ERROR:\n", e.stderr)
+        print("yt-dlp error:\n", e.stderr)
         return None
 
 
