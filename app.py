@@ -1,11 +1,11 @@
 import streamlit as st
 import os
-import subprocess
 import uuid
 import whisper
 from dotenv import load_dotenv
 from urllib.parse import urlparse, parse_qs
 import google.generativeai as genai
+from yt_dlp import YoutubeDL
 
 # Load environment variables
 load_dotenv()
@@ -37,60 +37,47 @@ def get_video_id(youtube_url):
             return query.path.split('/')[2]
     return None
 
-
-def download_audio(video_url):
+# Download audio using yt-dlp
+def download_audio(video_url, output_dir="downloads"):
+    os.makedirs(output_dir, exist_ok=True)
     unique_id = str(uuid.uuid4())
-    output_filename = f"{unique_id}.mp3"
+    output_path = os.path.join(output_dir, f"{unique_id}.mp3")
 
-    # Full paths to yt-dlp and ffmpeg
-    yt_dlp_path = r"C:\Python313\Scripts\yt-dlp.exe"
-    ffmpeg_dir = r"D:\YT_VIDEO_SUMMARIZER\ffmpeg\ffmpeg-7.1.1-essentials_build\bin"
-
-    cmd = [
-        yt_dlp_path,
-        "-x", "--audio-format", "mp3",
-        "--ffmpeg-location", ffmpeg_dir,
-        "-o", output_filename,
-        video_url
-    ]
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': output_path,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'quiet': True,
+        'no_warnings': True,
+    }
 
     try:
-        result = subprocess.run(
-            cmd,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        print("yt-dlp output:\n", result.stdout)
-        return output_filename
-    except subprocess.CalledProcessError as e:
-        print("yt-dlp error:\n", e.stderr)
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([video_url])
+        if not os.path.exists(output_path):
+            return None
+        return output_path
+    except Exception as e:
+        print("yt-dlp error:", str(e))
         return None
 
-
-
-
-
-
-
-
-
-
-
-# Transcribe audio with Whisper
+# Transcribe with Whisper
 def transcribe_audio(audio_path):
     model = whisper.load_model("base")
     result = model.transcribe(audio_path)
     return result["text"]
 
-# Generate summary using Gemini
+# Generate Summary
 def generate_gemini_content(transcript_text, prompt):
     model = genai.GenerativeModel("gemini-1.5-flash")
     response = model.generate_content(prompt + transcript_text)
     return response.text
 
-# Streamlit App UI
+# Streamlit UI
 st.set_page_config(page_title="YouTube Video Summarizer", layout="centered")
 st.markdown("## 🎥 YouTube Video Summarizer")
 st.markdown("Paste a YouTube link below and get a clean summary powered by Whisper + Gemini.")
@@ -100,7 +87,7 @@ youtube_link = st.text_input("📎 Enter YouTube video URL")
 if youtube_link:
     video_id = get_video_id(youtube_link)
     if video_id:
-        st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", caption="Video Thumbnail", use_column_width=True)
+        st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", caption="Video Thumbnail", use_container_width=True)
 
         if st.button("Summarize"):
             with st.spinner("🔊 Downloading audio..."):
@@ -115,9 +102,9 @@ if youtube_link:
                     st.markdown("## 📝 Detailed Summary:")
                     st.write(summary)
 
-                os.remove(audio_file)  # Clean up
+                os.remove(audio_file)
             else:
-                st.error(st.error("❌ Failed to download audio. This video may be protected (DRM/SABR). Please try a different YouTube link."))
+                st.error("❌ Failed to download audio. This video may be DRM protected. Try another.")
     else:
         st.warning("⚠️ Invalid YouTube link.")
 
